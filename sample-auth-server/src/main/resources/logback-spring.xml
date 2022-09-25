@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <springProperty scop="context" name="spring.application.name" source="spring.application.name" defaultValue=""/>
+    <property name="log_path" value="logs/${spring.application.name}"/>
+    <property name="log_file_name" value="${log_path}/${spring.application.name}.%d{yyyy-MM-dd}.%i.log"/>
+    <property name="log_pattern" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%-5level] %-40.40logger{39} : %msg%n"/>
+
+    <!-- 格式化输出：%d表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度%msg：日志消息，%n是换行符 -->
+    <property name="console_color_log_pattern"
+              value="%d{yyyy-MM-dd HH:mm:ss} [%thread] %magenta(%-10level) %green([%-50.50class]) >>>>>> %cyan(%msg) %n"/>
+
+    <!-- 控制台输出 -->
+    <appender name="console-log" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- 彩色日志 -->
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>${console_color_log_pattern}</pattern>
+        </layout>
+    </appender>
+
+    <!-- 按照每天生成日志文件 -->
+    <appender name="file-log" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 日志文件输出的文件名 -->
+            <FileNamePattern>${log_file_name}</FileNamePattern>
+            <!-- 日志文件最大的大小 -->
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>60MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <!-- 日志文件保留天数 -->
+            <MaxHistory>30</MaxHistory>
+        </rollingPolicy>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>${log_pattern}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 日志输出级别 -->
+    <root level="info">
+        <appender-ref ref="console-log"/>
+        <appender-ref ref="file-log"/>
+    </root>
+
+</configuration>
