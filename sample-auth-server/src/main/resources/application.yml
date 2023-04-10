@@ -1,10 +1,90 @@
 server:
   port: 9000
 
+spring:
+  redis:
+    host: ${BREEZE_REDIS_HOST:breeze-redis}
+    port: ${BREEZE_REDIS_PORT:6379}
+    password: ${BREEZE_REDIS_PASSWORD:breeze}
+  # 数据源配置
+  datasource:
+    dynamic:
+      # 默认数据源，默认master
+      primary: master
+      # 严格匹配数据源,默认false. true未匹配到指定数据源时抛异常,false使用默认数据源
+      strict: true
+      # 数据库连接信息配置
+      datasource:
+        # 主库
+        master:
+          url: jdbc:mysql://${BREEZE_MYSQL_HOST:breeze-mysql}:${BREEZE_MYSQL_PORT:3366}/${BREEZE_MYSQL_DB_NAME:breeze}?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          username: ${BREEZE_MYSQL_USERNAME:root}
+          password: ${BREEZE_MYSQL_PASSWORD:root}
+          type: com.alibaba.druid.pool.DruidDataSource
+        # flowable 从库 硬编码，若使用flowable单独的数据库，指定数据源名称为flowable
+        flowable:
+          url: jdbc:mysql://${BREEZE_MYSQL_SLAVE_HOST:breeze-flowable-mysql}:${BREEZE_MYSQL_SLAVE_PORT:3366}/${BREEZE_MYSQL_SLAVE_DB_NAME:breeze_flowable}?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&nullCatalogMeansCurrent=true
+          driver-class-name: com.mysql.cj.jdbc.Driver
+          username: ${BREEZE_MYSQL_SLAVE_USERNAME:root}
+          password: ${BREEZE_MYSQL_SLAVE_PASSWORD:root}
+          type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      initial-size: 5
+      min-idle: 10
+      max-active: 20
+      max-wait: 60000
+      min-evictable-idle-time-millis: 300000
+      time-between-eviction-runs-millis: 50000
+      # 配置插件：stat-监控统计，日志，wall-防火墙（防止SQL注入），
+      # ps：去掉后，监控界面的sql无法统计
+      filters: stat,wall
+      # 检测连接是否有效的 SQL语句，为空时以下三个配置均无效
+      validation-query: SELECT 1
+      # 申请连接时执行validationQuery检测连接是否有效，默认true，开启后会降低性能
+      test-on-borrow: true
+      # 归还连接时执行validationQuery检测连接是否有效，默认false，开启后会降低性能
+      test-on-return: true
+      # 申请连接时如果空闲时间大于timeBetweenEvictionRunsMillis，执行validationQuery检测连接是否有效，默认false，建议开启，不影响性能
+      test-while-idle: true
+      # 过滤慢sql
+      filter:
+        stat:
+          db-type: mysql
+          # 开启 FilterStat，默认true
+          enabled: true
+          # 开启 慢SQL 记录，默认false
+          log-slow-sql: true
+          # 是否是慢SQL，默认 3000ms
+          slow-sql-millis: 5000
+          # 合并多个连接池的监控数据，默认false
+          merge-sql: false
+        wall:
+          db-type: mysql
+          config:
+            multi-statement-allow: true
+      # 开启StatViewServlet
+      stat-view-servlet:
+        enabled: true
+        reset-enable: false
+        allow: 127.0.0.1
+        url-pattern: /druid/*
+        login-username: ${BREEZE-DRUID-USERNAME:admin}
+        login-password: ${BREEZE-DRUID-PASSWORD:admin}
+        deny:
+      # 配置WebStatFilter，用于采集web关联监控的数据
+      web-stat-filter:
+        # 开启监控
+        enabled: true
+        url-pattern: /*
+        exclusions: "*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*"
+        session-stat-enable: true
+        session-stat-max-count: 1000
+
 logging:
   level:
     root: INFO
     org.springframework.web: INFO
     org.springframework.security: INFO
     org.springframework.security.oauth2: INFO
-#    org.springframework.boot.autoconfigure: DEBUG
+    # org.springframework.boot.autoconfigure: DEBUG

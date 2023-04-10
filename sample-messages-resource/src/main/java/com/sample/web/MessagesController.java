@@ -15,10 +15,12 @@
  */
 package com.sample.web;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -27,11 +29,13 @@ import java.util.stream.Collectors;
  * @author Joe Grandja
  * @since 0.0.1
  */
+@Slf4j
 @RestController
 public class MessagesController {
 
     @GetMapping("/messages")
-    public String[] getMessages() {
+    public String[] getMessages(HttpServletRequest request) {
+        log.info(request.getHeader("Authorization"));
         return new String[]{"Message 1", "Message 2", "Message 3"};
     }
 

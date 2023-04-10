@@ -13,38 +13,47 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.sample.config;
 
-import com.sample.jose.Jwks;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
+import com.sample.jose.Jwks;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.authorization.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
-import org.springframework.security.oauth2.server.authorization.InMemoryOAuth2AuthorizationConsentService;
-import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsentService;
-import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;
+import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
+import org.springframework.security.oauth2.server.authorization.*;
+import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.config.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.config.ProviderSettings;
+import org.springframework.security.oauth2.server.authorization.config.TokenSettings;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
+import java.time.Duration;
 import java.util.UUID;
 
+/**
+ * 授权服务器配置
+ *
+ * @author breeze
+ * @date 2023-04-10
+ */
 @Configuration(proxyBeanMethods = false)
 public class AuthorizationServerConfig {
 
@@ -53,10 +62,6 @@ public class AuthorizationServerConfig {
      * 使用系统自带的即不用
      */
     private static final String CUSTOM_CONSENT_PAGE_URI = "/oauth2/consent";
-
-
-    @Autowired
-    private UserDetailsService userDetailsService;
 
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -74,7 +79,6 @@ public class AuthorizationServerConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.ALWAYS)
                 )
                 .requestMatcher(endpointsMatcher)
-                // .userDetailsService(userDetailsService)
                 .authorizeRequests(authorizeRequests -> authorizeRequests.anyRequest().authenticated())
                 .csrf(csrf -> csrf.ignoringRequestMatchers(endpointsMatcher))
                 .exceptionHandling(exceptions ->
@@ -85,29 +89,54 @@ public class AuthorizationServerConfig {
     }
 
     @Bean
-    public RegisteredClientRepository registeredClientRepository() {
-        RegisteredClient registeredClient = RegisteredClient.withId(UUID.randomUUID().toString())
+    public RegisteredClientRepository registeredClientRepository(JdbcTemplate jdbcTemplate) {
+        RegisteredClient registeredClient = RegisteredClient
+                .withId(UUID.randomUUID().toString())
+                // clientId客户端标识符
                 .clientId("messaging-client")
+                // clientSecret客户端密钥
                 .clientSecret("{noop}secret")
+                // clientAuthenticationMethod 客户端使用的身份验证方法
+                // params: [client_secret_basic, client_secret_post, private_key_jwt, client_secret_jwt, none]
+                .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_POST)
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+                // authorizationGrantType 客户端可以使用的授权类型
+                // params: [authorization_code, client_credentials, refresh_token]
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
                 .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
-                .redirectUri("http://127.0.0.1:8080/login/oauth2/code/messaging-client-oidc")
-                .redirectUri("http://127.0.0.1:8080/authorized")
+                // redirectUri客户端已注册重定向的URI
+                .redirectUri("http://127.0.0.1:8080/login/oauth2/code/messaging-client-ok")
+                .redirectUri("http://127.0.0.1:8080/ok")
+                // scope允许客户端请求的范围
                 .scope(OidcScopes.OPENID)
                 .scope("message.read")
                 .scope("message.write")
-                .clientSettings(ClientSettings.builder().requireAuthorizationConsent(true).build())
+                // clientSetting 客户端自定义设置
+                .clientSettings(ClientSettings
+                        .builder()
+                        .requireAuthorizationConsent(true)
+                        .requireProofKey(false)
+                        .build()
+                )
+                // tokenSetting发布给客户端的 OAuth2 令牌的自定义设置
+                .tokenSettings(TokenSettings.builder()
+                        .idTokenSignatureAlgorithm(SignatureAlgorithm.RS256)
+                        .accessTokenTimeToLive(Duration.ofSeconds(30 * 60))
+                        .refreshTokenTimeToLive(Duration.ofSeconds(60 * 60))
+                        .reuseRefreshTokens(true)
+                        .build())
                 .build();
-        return new InMemoryRegisteredClientRepository(registeredClient);
+        JdbcRegisteredClientRepository registeredClientRepository = new JdbcRegisteredClientRepository(jdbcTemplate);
+        registeredClientRepository.save(registeredClient);
+        return registeredClientRepository;
     }
 
     /**
      * 加载jwk资源
      * 用于生成令牌
      *
-     * @return
+     * @return {@link JWKSource}<{@link SecurityContext}>
      */
     @Bean
     public JWKSource<SecurityContext> jwkSource() {
@@ -124,13 +153,14 @@ public class AuthorizationServerConfig {
         return ProviderSettings.builder().issuer("http://localhost:9000").build();
     }
 
-    /**
-     * 授权确认信息处理服务
-     */
     @Bean
-    public OAuth2AuthorizationConsentService authorizationConsentService() {
-        // Will be used by the ConsentController
-        return new InMemoryOAuth2AuthorizationConsentService();
+    public OAuth2AuthorizationService authorizationService(JdbcTemplate jdbcTemplate, RegisteredClientRepository registeredClientRepository) {
+        return new JdbcOAuth2AuthorizationService(jdbcTemplate, registeredClientRepository);
+    }
+
+    @Bean
+    public OAuth2AuthorizationConsentService authorizationConsentService(JdbcTemplate jdbcTemplate, RegisteredClientRepository registeredClientRepository) {
+        return new JdbcOAuth2AuthorizationConsentService(jdbcTemplate, registeredClientRepository);
     }
 
 }
