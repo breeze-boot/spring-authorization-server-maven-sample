@@ -108,6 +108,7 @@ public class AuthorizationServerConfig {
                 // redirectUri客户端已注册重定向的URI
                 .redirectUri("http://127.0.0.1:8080/login/oauth2/code/messaging-client-ok")
                 .redirectUri("http://127.0.0.1:8080/ok")
+                .redirectUri("http://www.baidu.com")
                 // scope允许客户端请求的范围
                 .scope(OidcScopes.OPENID)
                 .scope("message.read")

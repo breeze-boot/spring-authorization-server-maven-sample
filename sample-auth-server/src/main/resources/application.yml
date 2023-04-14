@@ -4,7 +4,7 @@ server:
 spring:
   redis:
     host: ${BREEZE_REDIS_HOST:breeze-redis}
-    port: ${BREEZE_REDIS_PORT:6379}
+    port: ${BREEZE_REDIS_PORT:6378}
     password: ${BREEZE_REDIS_PASSWORD:breeze}
   # 数据源配置
   datasource:
@@ -21,13 +21,6 @@ spring:
           driver-class-name: com.mysql.cj.jdbc.Driver
           username: ${BREEZE_MYSQL_USERNAME:root}
           password: ${BREEZE_MYSQL_PASSWORD:root}
-          type: com.alibaba.druid.pool.DruidDataSource
-        # flowable 从库 硬编码，若使用flowable单独的数据库，指定数据源名称为flowable
-        flowable:
-          url: jdbc:mysql://${BREEZE_MYSQL_SLAVE_HOST:breeze-flowable-mysql}:${BREEZE_MYSQL_SLAVE_PORT:3366}/${BREEZE_MYSQL_SLAVE_DB_NAME:breeze_flowable}?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=true&serverTimezone=GMT%2B8&nullCatalogMeansCurrent=true
-          driver-class-name: com.mysql.cj.jdbc.Driver
-          username: ${BREEZE_MYSQL_SLAVE_USERNAME:root}
-          password: ${BREEZE_MYSQL_SLAVE_PASSWORD:root}
           type: com.alibaba.druid.pool.DruidDataSource
     druid:
       initial-size: 5
