@@ -30,7 +30,7 @@
         <mysql.version>8.0.32</mysql.version>
 
         <nimbus-jose-jwt.version>9.22</nimbus-jose-jwt.version>
-        <spring-authorization-server.version>0.3.1</spring-authorization-server.version>
+        <spring-authorization-server.version>0.4.1</spring-authorization-server.version>
 
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
