@@ -119,6 +119,7 @@ public class AuthorizationServerConfig {
                 .redirectUri("http://www.baidu.com")
                 // scope允许客户端请求的范围
                 .scope(OidcScopes.OPENID)
+                .scope(OidcScopes.PROFILE)
                 .scope("message.read")
                 .scope("message.write")
                 // clientSetting 客户端自定义设置
@@ -137,7 +138,9 @@ public class AuthorizationServerConfig {
                         .build())
                 .build();
         JdbcRegisteredClientRepository registeredClientRepository = new JdbcRegisteredClientRepository(jdbcTemplate);
-        registeredClientRepository.save(registeredClient);
+        if (null == registeredClientRepository.findByClientId("messaging-client")) {
+            registeredClientRepository.save(registeredClient);
+        }
         return registeredClientRepository;
     }
 
