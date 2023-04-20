@@ -48,8 +48,9 @@ public class DefaultSecurityConfig {
     @Bean
     UserDetailsService users() {
         UserDetails user = User.withUsername("admin")
-                .password("{noop}123456")
+                .password("{noop}123123")
                 .roles("USER")
+                .authorities("sys:test:write")
                 .build();
         return new InMemoryUserDetailsManager(user);
     }

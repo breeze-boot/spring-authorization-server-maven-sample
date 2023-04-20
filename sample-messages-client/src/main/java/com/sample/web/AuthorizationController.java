@@ -82,7 +82,7 @@ public class AuthorizationController {
     }
 
     // '/authorized' is the registered 'redirect_uri' for authorization_code
-    @GetMapping(value = "/ok", params = OAuth2ParameterNames.ERROR)
+    @GetMapping(value = "/authorized", params = OAuth2ParameterNames.ERROR)
     public String authorizationFailed(Model model, HttpServletRequest request) {
         String errorCode = request.getParameter(OAuth2ParameterNames.ERROR);
         if (StringUtils.hasText(errorCode)) {

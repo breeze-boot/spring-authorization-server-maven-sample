@@ -19,6 +19,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
@@ -32,18 +34,34 @@ public class ResourceServerConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-//                .mvcMatcher("/messages/**")
-//                .mvcMatcher("/list/**")
                 // 所有请求都进行拦截
-                .authorizeRequests().anyRequest().authenticated();
-//                .mvcMatchers("/messages/**","/list/**")
-//                .access("hasAuthority('SCOPE_message.read')");
-
-        http.oauth2ResourceServer()
+                .authorizeRequests().anyRequest().authenticated()
+                .and()
+                .oauth2ResourceServer()
                 .accessDeniedHandler(new SimpleAccessDeniedHandler())
                 .authenticationEntryPoint(new SimpleAuthenticationEntryPoint())
-                .jwt();
+                .jwt()
+                .jwtAuthenticationConverter(jwtAuthenticationConverter())
+        ;
         return http.build();
     }
 
+    /**
+     * 从 JWT 的 scope 中获取的权限 取消 SCOPE_ 的前缀
+     * <p>
+     * 设置从 jwt claim 中那个字段获取权限
+     * 若需要同多个字段中获取权限或者是通过url请求获取的权限，则需要自己提供jwtAuthenticationConverter() 方法实现
+     *
+     * @return JwtAuthenticationConverter
+     */
+    private JwtAuthenticationConverter jwtAuthenticationConverter() {
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+        JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
+        // 去掉 SCOPE_ 的前缀
+        authoritiesConverter.setAuthorityPrefix("");
+        // 在 jwt claim 中那个字段获取权限，默认是从 scope 或 scp 字段中获取
+        authoritiesConverter.setAuthoritiesClaimName("scope");
+        converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
+        return converter;
+    }
 }

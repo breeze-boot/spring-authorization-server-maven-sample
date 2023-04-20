@@ -43,7 +43,7 @@ public class SecurityConfig {
 				authorizeRequests.anyRequest().authenticated()
 			)
 			.oauth2Login(oauth2Login ->
-				oauth2Login.loginPage("/oauth2/authorization/messaging-client-ok"))
+				oauth2Login.loginPage("/oauth2/authorization/messaging-client-oidc"))
 			.oauth2Client(withDefaults());
 		return http.build();
 	}

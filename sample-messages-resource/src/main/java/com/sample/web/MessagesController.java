@@ -33,21 +33,12 @@ import java.util.stream.Collectors;
 @RestController
 public class MessagesController {
 
+    @PreAuthorize("hasAnyAuthority('message.read')")
+//    @PreAuthorize("hasAnyAuthority('sys:test:write')")
     @GetMapping("/messages")
     public String[] getMessages(HttpServletRequest request) {
         log.info(request.getHeader("Authorization"));
         return new String[]{"Message 1", "Message 2", "Message 3"};
-    }
-
-    /**
-     * 列表查询 测试
-     *
-     * @return
-     */
-    @PreAuthorize("hasAnyAuthority('SCOPE_message.read1')")
-    @GetMapping("/list")
-    public List<String> list() {
-        return Arrays.stream(new String[]{"Message 1", "Message 2", "Message 3"}).collect(Collectors.toList());
     }
 
 }
